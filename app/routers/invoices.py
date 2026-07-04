@@ -20,32 +20,40 @@ class InvoiceLineIn(BaseModel):
 
 class CreateInvoiceRequest(BaseModel):
     org_id: str
-    contact_phone: str          # find or create contact by phone
-    contact_name: str
+    contact_name: Optional[str] = None   # optional — None = walk-in customer
+    contact_phone: Optional[str] = None  # optional — needed for WA reminders
     lines: list[InvoiceLineIn]
     due_days: int = 30
     tax_type: str = "none"
     notes: Optional[str] = None
-    send_whatsapp: bool = True
+    send_whatsapp: bool = False
 
 @router.post("/create")
 async def create_invoice(payload: CreateInvoiceRequest, db: Session = Depends(get_db)):
     org_id = uuid.UUID(payload.org_id)
 
-    # Find or create contact
-    contact = db.query(Contact).filter(
-        Contact.org_id == org_id,
-        Contact.phone == payload.contact_phone,
-    ).first()
-    if not contact:
-        contact = Contact(
-            org_id=org_id,
-            name=payload.contact_name,
-            phone=payload.contact_phone,
-            whatsapp=payload.contact_phone,
-        )
-        db.add(contact)
-        db.flush()
+    # Handle contact — optional
+    contact = None
+    if payload.contact_name:
+        if payload.contact_phone:
+            contact = db.query(Contact).filter(
+                Contact.org_id == org_id,
+                Contact.phone == payload.contact_phone,
+            ).first()
+        if not contact:
+            contact = db.query(Contact).filter(
+                Contact.org_id == org_id,
+                Contact.name.ilike(payload.contact_name),
+            ).first()
+        if not contact:
+            contact = Contact(
+                org_id=org_id,
+                name=payload.contact_name,
+                phone=payload.contact_phone or None,
+                whatsapp=payload.contact_phone or None,
+            )
+            db.add(contact)
+            db.flush()
 
     # Create invoice
     lines = [{"description": l.description, "quantity": l.quantity,
@@ -53,7 +61,7 @@ async def create_invoice(payload: CreateInvoiceRequest, db: Session = Depends(ge
     tax_type = TaxType(payload.tax_type) if payload.tax_type in TaxType.__members__ else TaxType.none
 
     invoice = InvoiceService.create_invoice(
-        db=db, org_id=org_id, contact_id=contact.id,
+        db=db, org_id=org_id, contact_id=contact.id if contact else None,
         lines=lines, due_days=payload.due_days,
         tax_type=tax_type, notes=payload.notes,
     )
@@ -62,7 +70,7 @@ async def create_invoice(payload: CreateInvoiceRequest, db: Session = Depends(ge
     invoice = InvoiceService.post_invoice(invoice, db)
 
     # Send WhatsApp notification
-    if payload.send_whatsapp and contact.whatsapp:
+    if payload.send_whatsapp and contact and contact.whatsapp:
         msg = (
             f"📄 *Invoice {invoice.invoice_number}*\n"
             f"Amount: *Rs. {invoice.total:,.0f}*\n"
@@ -76,7 +84,7 @@ async def create_invoice(payload: CreateInvoiceRequest, db: Session = Depends(ge
         "status": invoice.status,
         "total": float(invoice.total),
         "due_date": str(invoice.due_date),
-        "contact": contact.name,
+        "contact": contact.name if contact else "Walk-in Customer",
         "journal_entry_created": invoice.journal_entry_id is not None,
     }
 

@@ -64,15 +64,16 @@ export default function NewInvoicePage() {
   const subtotal = lines.reduce((s, l) => s + l.quantity * l.unit_price, 0);
 
   const handleSubmit = async (sendWhatsapp: boolean) => {
-    if (!contactName.trim()) { setError("Customer name required"); return; }
+    // contact name is optional - walk-in customers allowed
     if (lines.some(l => !l.description || l.unit_price <= 0)) { setError("All items need description and price"); return; }
     setError(""); setLoading(true);
     try {
       const res = await fetch(`${API}/api/invoices/create`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          org_id: orgId, contact_name: contactName,
-          contact_phone: contactPhone || "0000000000",
+          org_id: orgId,
+          contact_name: contactName || null,
+          contact_phone: contactPhone || null,
           lines, due_days: dueDays, notes,
           send_whatsapp: sendWhatsapp && !!contactPhone,
         }),
@@ -122,9 +123,9 @@ export default function NewInvoicePage() {
         <div className="text-sm font-semibold mb-3">Customer</div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="text-xs text-gray-500 mb-1 block">Name *</label>
+            <label className="text-xs text-gray-500 mb-1 block">Name (optional)</label>
             <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-              placeholder="Ahmed Khan" value={contactName} onChange={e => setContactName(e.target.value)} />
+              placeholder="Ahmed Khan (optional)" value={contactName} onChange={e => setContactName(e.target.value)} />
           </div>
           <div>
             <label className="text-xs text-gray-500 mb-1 block">Phone (for WhatsApp)</label>

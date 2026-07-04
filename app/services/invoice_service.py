@@ -126,11 +126,12 @@ class InvoiceService:
         invoice.journal_entry_id = entry.id
 
         # Update contact AR balance
-        contact = db.get(Contact, invoice.contact_id)
-        if contact:
-            contact.udhar_balance = float(
-                Decimal(str(contact.udhar_balance)) + invoice.total
-            )
+        if invoice.contact_id:
+            contact = db.get(Contact, invoice.contact_id)
+            if contact:
+                contact.udhar_balance = float(
+                    Decimal(str(contact.udhar_balance)) + invoice.total
+                )
 
         db.commit()
         db.refresh(invoice)
