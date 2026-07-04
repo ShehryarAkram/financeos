@@ -4,6 +4,7 @@ from app.models.account import Account, AccountType, NormalBalance, PAKISTAN_DEF
 from app.models.contact import Contact, ContactType
 from app.models.journal import JournalEntry, JournalLine, EntrySource
 from app.models.invoice import Invoice, InvoiceLine, InvoiceStatus, TaxType
+from app.models.product import Product
 
 __all__ = [
     "Organization", "PlanType",
@@ -12,4 +13,5 @@ __all__ = [
     "Contact", "ContactType",
     "JournalEntry", "JournalLine", "EntrySource",
     "Invoice", "InvoiceLine", "InvoiceStatus", "TaxType",
+    "Product",
 ]

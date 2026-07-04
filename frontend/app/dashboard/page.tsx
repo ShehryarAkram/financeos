@@ -53,7 +53,7 @@ export default function Dashboard() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard label="Aaj Aaya" value={`Rs. ${(stats?.income || 0).toLocaleString()}`} sub="Today's income" color="text-green-600" />
         <StatCard label="Aaj Gaya" value={`Rs. ${(stats?.expense || 0).toLocaleString()}`} sub="Today's expenses" color="text-red-500" />
         <StatCard label="Net Faida" value={`Rs. ${(stats?.profit || 0).toLocaleString()}`} sub="Today's profit" color="text-blue-600" />
