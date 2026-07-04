@@ -2,16 +2,9 @@
 import { useEffect, useState } from "react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-interface Product {
-  id: string;
-  name: string;
-  short_name: string;
-  default_price: number;
-  unit: string;
-}
-
 const UNITS = ["piece", "kg", "gram", "meter", "litre", "dozen", "box", "carton", "bag"];
+
+interface Product { id: string; name: string; short_name: string; default_price: number; unit: string; }
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -63,11 +56,7 @@ export default function ProductsPage() {
     load(orgId);
   };
 
-  if (loading) return (
-    <div className="p-8 flex items-center justify-center h-96">
-      <div className="text-gray-400 animate-pulse">Loading products...</div>
-    </div>
-  );
+  if (loading) return <div className="p-8 flex items-center justify-center h-96"><div className="text-gray-400 animate-pulse">Loading...</div></div>;
 
   return (
     <div className="p-4 lg:p-8">
@@ -76,8 +65,7 @@ export default function ProductsPage() {
           <h1 className="text-2xl font-bold">Product Catalog</h1>
           <p className="text-sm text-gray-500 mt-1">Pre-add items for quick invoice filling</p>
         </div>
-        <button onClick={() => setShowForm(!showForm)}
-          className="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg">
+        <button onClick={() => setShowForm(!showForm)} className="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg">
           {showForm ? "Cancel" : "+ Add Product"}
         </button>
       </div>
@@ -122,32 +110,30 @@ export default function ProductsPage() {
             No products yet.<br />Add items like "rice", "daal", "kapra" so they auto-fill in invoices.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100">
-                  <th className="text-left py-3 text-gray-500 font-medium">Short Name</th>
-                  <th className="text-left py-3 text-gray-500 font-medium">Full Name</th>
-                  <th className="text-left py-3 text-gray-500 font-medium">Unit</th>
-                  <th className="text-right py-3 text-gray-500 font-medium">Default Price</th>
-                  <th className="text-right py-3 text-gray-500 font-medium"></th>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="text-left py-3 text-gray-500 font-medium">Short Name</th>
+                <th className="text-left py-3 text-gray-500 font-medium">Full Name</th>
+                <th className="text-left py-3 text-gray-500 font-medium">Unit</th>
+                <th className="text-right py-3 text-gray-500 font-medium">Price</th>
+                <th className="text-right py-3 text-gray-500 font-medium"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {products.map(p => (
+                <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50">
+                  <td className="py-3 font-mono text-green-700 font-medium">{p.short_name}</td>
+                  <td className="py-3 text-gray-800">{p.name}</td>
+                  <td className="py-3 text-gray-500">{p.unit}</td>
+                  <td className="py-3 text-right font-semibold">Rs. {p.default_price.toLocaleString()}</td>
+                  <td className="py-3 text-right">
+                    <button onClick={() => handleDelete(p.id)} className="text-red-400 hover:text-red-600 text-xs">Remove</button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {products.map(p => (
-                  <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50">
-                    <td className="py-3 font-mono text-green-700 font-medium">{p.short_name}</td>
-                    <td className="py-3 text-gray-800">{p.name}</td>
-                    <td className="py-3 text-gray-500">{p.unit}</td>
-                    <td className="py-3 text-right font-semibold">Rs. {p.default_price.toLocaleString()}</td>
-                    <td className="py-3 text-right">
-                      <button onClick={() => handleDelete(p.id)} className="text-red-400 hover:text-red-600 text-xs">Remove</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
     </div>
