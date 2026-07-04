@@ -10,6 +10,7 @@ When a message comes in:
 """
 
 from fastapi import APIRouter, Request, Query, HTTPException, Depends
+from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from decimal import Decimal
@@ -120,7 +121,7 @@ async def verify_webhook(
     hub_challenge: str = Query(None, alias="hub.challenge"),
 ):
     if hub_mode == "subscribe" and hub_verify_token == settings.WHATSAPP_VERIFY_TOKEN:
-        return int(hub_challenge)
+        return PlainTextResponse(content=hub_challenge)
     raise HTTPException(status_code=403, detail="Verification failed")
 
 
