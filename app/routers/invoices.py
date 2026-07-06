@@ -131,3 +131,17 @@ def list_invoices(org_id: str, db: Session = Depends(get_db)):
         "due_date": str(inv.due_date),
         "issue_date": str(inv.issue_date),
     } for inv in invoices]
+
+@router.post("/{invoice_id}/mark-paid")
+def mark_paid(invoice_id: str, db: Session = Depends(get_db)):
+    from app.models.invoice import Invoice
+    from app.services.invoice_service import InvoiceService
+    from decimal import Decimal
+    invoice = db.get(Invoice, uuid.UUID(invoice_id))
+    if not invoice:
+        raise HTTPException(404, "Invoice not found")
+    remaining = invoice.total - invoice.amount_paid
+    if remaining <= 0:
+        raise HTTPException(400, "Invoice already fully paid")
+    invoice = InvoiceService.record_payment(invoice, remaining, db)
+    return {"status": invoice.status, "amount_paid": float(invoice.amount_paid)}
