@@ -33,6 +33,17 @@ export default function InvoicesPage() {
   const collected = invoices.reduce((s, i) => s + i.amount_paid, 0);
   const overdue = invoices.filter(i => i.status === "overdue").reduce((s, i) => s + (i.total - i.amount_paid), 0);
 
+  const markPaid = async (id: string) => {
+    try {
+      const res = await fetch(`${API}/api/invoices/${id}/mark-paid`, { method: "POST" });
+      if (res.ok) {
+        setInvoices(prev => prev.map(inv =>
+          inv.id === id ? { ...inv, status: "paid", amount_paid: inv.total } : inv
+        ));
+      }
+    } catch (e) { console.error(e); }
+  };
+
   const statusColor = (status: string) => {
     if (status === "paid") return "bg-green-100 text-green-700";
     if (status === "overdue") return "bg-red-100 text-red-700";
@@ -100,9 +111,18 @@ export default function InvoicesPage() {
                     </span>
                   </td>
                   <td className="py-3 text-right font-semibold">Rs. {inv.total.toLocaleString()}</td>
-                  <td className="py-3 text-right">
+                  <td className="py-3 text-right flex gap-3 justify-end">
                     <a href={`${API}/api/invoices/${inv.id}/pdf`} target="_blank"
                       className="text-green-600 hover:text-green-700 text-xs font-medium">PDF ↗</a>
+                    {inv.status !== "paid" && (
+                      <button onClick={() => markPaid(inv.id)}
+                        className="text-blue-600 hover:text-blue-700 text-xs font-medium">
+                        Mark Paid
+                      </button>
+                    )}
+                    {inv.status === "paid" && (
+                      <span className="text-xs text-green-600">✓ Paid</span>
+                    )}
                   </td>
                 </tr>
               ))}
