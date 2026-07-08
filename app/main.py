@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import whatsapp, auth, invoices, contacts, reports, products, tax, products
+from app.routers import whatsapp, auth, invoices, contacts, reports, products, tax, payroll, products
 
 app = FastAPI(title="FinanceOS API", version="0.1.0",
               description="Pakistan-first finance platform")
@@ -15,8 +15,10 @@ app.include_router(contacts.router, prefix="/api/contacts", tags=["contacts"])
 app.include_router(reports.router, prefix="/api/reports", tags=["reports"])
 app.include_router(products.router, prefix="/api/products", tags=["products"])
 app.include_router(tax.router, prefix="/api/tax", tags=["tax"])
+app.include_router(payroll.router, prefix="/api/payroll", tags=["payroll"])
 app.include_router(products.router, prefix="/api/products", tags=["products"])
 app.include_router(tax.router, prefix="/api/tax", tags=["tax"])
+app.include_router(payroll.router, prefix="/api/payroll", tags=["payroll"])
 
 @app.get("/")
 def root(): return {"status": "ok", "app": "FinanceOS", "version": "0.1.0"}
