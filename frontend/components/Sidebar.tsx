@@ -10,6 +10,7 @@ const links = [
   { href: "/udhar",     label: "Udhar Book",  icon: "📒" },
   { href: "/products",  label: "Products",    icon: "📦" },
   { href: "/reports",   label: "Reports",     icon: "📈" },
+  { href: "/tax",       label: "FBR Tax",     icon: "🧾" },
   { href: "/whatsapp",  label: "WA Bot Test", icon: "💬" },
 ];
 
