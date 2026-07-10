@@ -6,6 +6,7 @@ from app.models.journal import JournalEntry, JournalLine, EntrySource
 from app.models.invoice import Invoice, InvoiceLine, InvoiceStatus, TaxType
 from app.models.product import Product
 from app.models.employee import Employee, Payslip, EmployeeStatus
+from app.models.expense import Expense, ExpenseCategory, CATEGORY_ACCOUNT_MAP
 
 __all__ = [
     "Organization", "PlanType",
@@ -16,4 +17,5 @@ __all__ = [
     "Invoice", "InvoiceLine", "InvoiceStatus", "TaxType",
     "Product",
     "Employee", "Payslip", "EmployeeStatus",
+    "Expense", "ExpenseCategory", "CATEGORY_ACCOUNT_MAP",
 ]
