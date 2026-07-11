@@ -12,6 +12,7 @@ const links = [
   { href: "/reports",   label: "Reports",     icon: "📈" },
   { href: "/tax",       label: "FBR Tax",     icon: "🧾" },
   { href: "/payroll",   label: "Payroll",     icon: "💼" },
+  { href: "/expenses",  label: "Expenses",    icon: "💸" },
   { href: "/whatsapp",  label: "WA Bot Test", icon: "💬" },
 ];
 
