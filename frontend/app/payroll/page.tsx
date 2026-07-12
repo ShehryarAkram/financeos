@@ -9,6 +9,7 @@ interface Employee {
   department: string | null; basic_salary: number;
   cnic: string | null; phone: string | null;
   bank_name: string | null; bank_account: string | null;
+  advance_balance: number;
 }
 
 interface Payslip {
@@ -60,7 +61,7 @@ export default function PayrollPage() {
   useEffect(() => {
     const org = localStorage.getItem("org_id") || "";
     setOrgId(org);
-    if (org) { loadEmployees(org); loadPayslips(org); }
+    if (org) { loadEmployees(org); loadPayslips(org); loadAdvances(org); }
     else setLoading(false);
   }, []);
 
@@ -121,6 +122,34 @@ export default function PayrollPage() {
     finally { setProcessing(false); }
   };
 
+  const [advances, setAdvances] = useState<any[]>([]);
+  const [advEmpId, setAdvEmpId] = useState("");
+  const [advAmount, setAdvAmount] = useState("");
+  const [advReason, setAdvReason] = useState("");
+  const [givingAdv, setGivingAdv] = useState(false);
+
+  const loadAdvances = (org: string) => {
+    fetch(`${API}/api/payroll/advance/list/${org}`)
+      .then(r => r.json()).then(d => setAdvances(Array.isArray(d) ? d : []))
+      .catch(console.error);
+  };
+
+  const handleGiveAdvance = async () => {
+    if (!advEmpId || !advAmount) return;
+    setGivingAdv(true);
+    try {
+      const res = await fetch(`${API}/api/payroll/advance/give`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ org_id: orgId, employee_id: advEmpId, amount: parseFloat(advAmount), reason: advReason || null }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail);
+      setAdvAmount(""); setAdvReason(""); setAdvEmpId("");
+      loadAdvances(orgId); loadEmployees(orgId);
+    } catch (e: any) { alert(e.message); }
+    finally { setGivingAdv(false); }
+  };
+
   const totalPayroll = employees.reduce((s, e) => s + e.basic_salary, 0);
 
   if (loading) return (
@@ -158,6 +187,7 @@ export default function PayrollPage() {
           { id: "employees", label: "👥 Employees" },
           { id: "process",   label: "⚙️ Process Payroll" },
           { id: "payslips",  label: "📄 Payslips" },
+          { id: "advances",  label: "💵 Advances" },
         ].map(t => (
           <button key={t.id} onClick={() => setTab(t.id as any)}
             className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -377,6 +407,91 @@ export default function PayrollPage() {
                 ))}
               </tbody>
             </table>
+          )}
+        </div>
+      )}
+      {/* Advances Tab */}
+      {tab === "advances" && (
+        <div>
+          <div className="bg-white rounded-xl border border-gray-200 p-5 mb-4">
+            <div className="text-sm font-semibold mb-3">Give Advance Salary</div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Employee *</label>
+                <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                  value={advEmpId} onChange={e => setAdvEmpId(e.target.value)}>
+                  <option value="">Select employee...</option>
+                  {employees.map(e => (
+                    <option key={e.id} value={e.id}>
+                      {e.name} {e.advance_balance > 0 ? `(Advance: Rs. ${e.advance_balance.toLocaleString()})` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Amount (Rs.) *</label>
+                <input type="number" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="5000" value={advAmount} onChange={e => setAdvAmount(e.target.value)} />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Reason (optional)</label>
+                <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="Medical emergency, etc." value={advReason} onChange={e => setAdvReason(e.target.value)} />
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button onClick={handleGiveAdvance} disabled={givingAdv || !advEmpId || !advAmount}
+                className="bg-green-600 text-white text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">
+                {givingAdv ? "Processing..." : "Give Advance"}
+              </button>
+              <span className="text-xs text-gray-400">Cash will be deducted automatically from next payslip</span>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="text-sm font-semibold mb-3">Outstanding Advances</div>
+            {advances.length === 0 ? (
+              <div className="text-center py-8 text-gray-400 text-sm">No outstanding advances.</div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="text-left py-3 text-gray-500 font-medium">Employee</th>
+                    <th className="text-left py-3 text-gray-500 font-medium hidden sm:table-cell">Date</th>
+                    <th className="text-left py-3 text-gray-500 font-medium hidden sm:table-cell">Reason</th>
+                    <th className="text-right py-3 text-gray-500 font-medium">Amount</th>
+                    <th className="text-left py-3 text-gray-500 font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {advances.map(a => (
+                    <tr key={a.id} className="border-b border-gray-50">
+                      <td className="py-3 font-medium text-gray-800">{a.employee}</td>
+                      <td className="py-3 text-gray-500 hidden sm:table-cell">{a.date}</td>
+                      <td className="py-3 text-gray-500 hidden sm:table-cell">{a.reason || "—"}</td>
+                      <td className="py-3 text-right font-semibold text-orange-600">Rs. {a.amount.toLocaleString()}</td>
+                      <td className="py-3">
+                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
+                          Pending recovery
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {employees.filter(e => e.advance_balance > 0).length > 0 && (
+            <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-700">
+              <div className="font-medium mb-1">⚠️ Employees with outstanding advance:</div>
+              {employees.filter(e => e.advance_balance > 0).map(e => (
+                <div key={e.id} className="flex justify-between py-0.5">
+                  <span>{e.name}</span>
+                  <span className="font-medium">Rs. {e.advance_balance.toLocaleString()} will be deducted next payroll</span>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}
