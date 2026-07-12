@@ -162,6 +162,12 @@ def process_monthly_payroll(payload: dict, db: Session = Depends(get_db)):
         total_gross += gross
         total_net += net
 
+        # Deduct any outstanding advance
+        advance_deduction = min(emp.advance_balance, net)
+        if advance_deduction > 0:
+            net = net - advance_deduction
+            emp.advance_balance = emp.advance_balance - advance_deduction
+
         payslip = Payslip(
             org_id=org_id,
             employee_id=emp.id,
@@ -172,7 +178,8 @@ def process_monthly_payroll(payload: dict, db: Session = Depends(get_db)):
             gross_salary=gross,
             eobi_deduction=Decimal(str(calc["eobi_deduction"])),
             income_tax=Decimal(str(calc["income_tax"])),
-            total_deductions=Decimal(str(calc["total_deductions"])),
+            other_deductions=advance_deduction,
+            total_deductions=Decimal(str(calc["total_deductions"])) + advance_deduction,
             net_salary=net,
         )
         db.add(payslip)
@@ -330,3 +337,99 @@ def payslip_pdf(payslip_id: str, db: Session = Depends(get_db)):
         media_type="application/pdf",
         headers={"Content-Disposition": f"attachment; filename=payslip-{payslip_id[:8]}.pdf"}
     )
+
+class AdvanceRequest(BaseModel):
+    org_id: str
+    employee_id: str
+    amount: float
+    reason: Optional[str] = None
+    date: Optional[str] = None
+
+
+@router.post("/advance/give")
+def give_advance(payload: AdvanceRequest, db: Session = Depends(get_db)):
+    """Give advance salary to employee — debits advance account, credits cash"""
+    from app.models.employee import AdvanceSalary
+    org_id = uuid.UUID(payload.org_id)
+    emp = db.get(Employee, uuid.UUID(payload.employee_id))
+    if not emp:
+        raise HTTPException(404, "Employee not found")
+
+    amount = Decimal(str(payload.amount))
+    adv_date = date.fromisoformat(payload.date) if payload.date else date.today()
+
+    # DR Advance to Employee (treat as asset under miscellaneous) / CR Cash
+    cash = db.query(Account).filter(Account.org_id == org_id, Account.code == "1001").first()
+    advance_exp = db.query(Account).filter(Account.org_id == org_id, Account.code == "5106").first()
+
+    advance = AdvanceSalary(
+        org_id=org_id,
+        employee_id=emp.id,
+        amount=amount,
+        date=adv_date,
+        reason=payload.reason,
+    )
+    db.add(advance)
+
+    # Update employee advance balance
+    emp.advance_balance = emp.advance_balance + amount
+
+    if cash and advance_exp:
+        entry = JournalService.create_entry(
+            db=db, org_id=org_id, entry_date=adv_date,
+            narration=f"Advance salary — {emp.name}" + (f" ({payload.reason})" if payload.reason else ""),
+            source=EntrySource.manual,
+            lines=[
+                {"account_id": advance_exp.id, "debit": amount, "credit": 0},
+                {"account_id": cash.id, "debit": 0, "credit": amount},
+            ],
+        )
+        advance.journal_entry_id = entry.id
+
+    db.commit()
+    db.refresh(emp)
+
+    return {
+        "status": "advance_given",
+        "employee": emp.name,
+        "amount": float(amount),
+        "advance_balance": float(emp.advance_balance),
+        "message": f"Rs. {amount:,.0f} advance given to {emp.name}. Total advance: Rs. {emp.advance_balance:,.0f}"
+    }
+
+
+@router.get("/advance/list/{org_id}")
+def list_advances(org_id: str, db: Session = Depends(get_db)):
+    from app.models.employee import AdvanceSalary
+    advances = db.query(AdvanceSalary).filter(
+        AdvanceSalary.org_id == uuid.UUID(org_id),
+        AdvanceSalary.is_recovered == False,
+    ).order_by(AdvanceSalary.date.desc()).all()
+
+    result = []
+    for a in advances:
+        emp = db.get(Employee, a.employee_id)
+        result.append({
+            "id": str(a.id),
+            "employee": emp.name if emp else "Unknown",
+            "employee_id": str(a.employee_id),
+            "amount": float(a.amount),
+            "date": str(a.date),
+            "reason": a.reason,
+            "is_recovered": a.is_recovered,
+        })
+    return result
+
+
+@router.get("/employees-with-advance/{org_id}")
+def employees_with_advance(org_id: str, db: Session = Depends(get_db)):
+    employees = db.query(Employee).filter(
+        Employee.org_id == uuid.UUID(org_id),
+        Employee.advance_balance > 0,
+    ).all()
+    return [{
+        "id": str(e.id),
+        "name": e.name,
+        "basic_salary": float(e.basic_salary),
+        "advance_balance": float(e.advance_balance),
+    } for e in employees]

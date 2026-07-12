@@ -37,6 +37,9 @@ class Employee(Base):
     status: Mapped[EmployeeStatus] = mapped_column(Enum(EmployeeStatus), default=EmployeeStatus.active)
     notes: Mapped[str | None] = mapped_column(Text)
 
+    # Advance salary tracking
+    advance_balance: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=Decimal("0.00"))
+
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -71,3 +74,20 @@ class Payslip(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     employee: Mapped["Employee"] = relationship("Employee", back_populates="payslips")
+
+class AdvanceSalary(Base):
+    """Track advance salary given to employees"""
+    __tablename__ = "advance_salary"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    org_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), index=True)
+    employee_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("employees.id"), index=True)
+
+    amount: Mapped[Decimal] = mapped_column(Numeric(15, 2))
+    date: Mapped[date] = mapped_column(Date, default=date.today)
+    reason: Mapped[str | None] = mapped_column(String(255))
+    is_recovered: Mapped[bool] = mapped_column(Boolean, default=False)
+    recovered_month: Mapped[str | None] = mapped_column(String(7))  # "2026-07"
+
+    journal_entry_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("journal_entries.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

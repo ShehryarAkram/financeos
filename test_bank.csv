@@ -1,0 +1,8 @@
+Date,Description,Debit,Credit,Balance
+2026-07-01,Opening Balance,,,100000
+2026-07-02,LESCO Electricity Bill,5000,,95000
+2026-07-03,Sales Receipt from Ahmed,,25000,120000
+2026-07-05,Jazz Mobile Bill,1500,,118500
+2026-07-10,Rent Payment,30000,,88500
+2026-07-15,Salary Transfer,50000,,38500
+2026-07-20,Customer Payment,,40000,78500
