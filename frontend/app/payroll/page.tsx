@@ -18,7 +18,7 @@ interface Payslip {
 }
 
 export default function PayrollPage() {
-  const [tab, setTab] = useState<"employees"|"process"|"payslips">("employees");
+  const [tab, setTab] = useState<"employees"|"process"|"payslips"|"advances">("employees");
   const [orgId, setOrgId] = useState("");
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [payslips, setPayslips] = useState<Payslip[]>([]);

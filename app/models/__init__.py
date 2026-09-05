@@ -7,6 +7,8 @@ from app.models.invoice import Invoice, InvoiceLine, InvoiceStatus, TaxType
 from app.models.product import Product
 from app.models.employee import Employee, Payslip, EmployeeStatus, AdvanceSalary
 from app.models.expense import Expense, ExpenseCategory, CATEGORY_ACCOUNT_MAP
+from app.models.supplier import Supplier
+from app.models.order import Order, OrderItem, OrderStatus, OrderChannel, PaymentMethod
 
 __all__ = [
     "Organization", "PlanType",
@@ -18,4 +20,6 @@ __all__ = [
     "Product",
     "Employee", "Payslip", "EmployeeStatus", "AdvanceSalary",
     "Expense", "ExpenseCategory", "CATEGORY_ACCOUNT_MAP",
+    "Supplier",
+    "Order", "OrderItem", "OrderStatus", "OrderChannel", "PaymentMethod",
 ]
